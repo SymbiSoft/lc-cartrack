@@ -21,3 +21,7 @@ To make LCCarTrack able to access internal GPS module, an additional python modu
 = Help needed =
 As I do not own an iPhone, help is needed to develop iPhone porting.
 Feel free to modify your source at your wish for this purpose.
+
+This source would be a great starting point to "fix" the "ReadPos" function in my program:
+
+[http://gagravarr.org/code/s60_as_bt_gps.py Simple python script that talks to the built in GPS]
