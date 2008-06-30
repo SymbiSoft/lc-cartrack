@@ -25,6 +25,10 @@ To port program to N95 an additional python module is required, named LocationRe
 
 https://www.iyouit.eu/portal/software.aspx
 
+Please see dedicated page for porting to [N95].
+
 To port program to iPhone you'll need to "hack" it in such a way it can be programmed in Python:
 
 http://www.saurik.com/id/5
+
+Please see dedicated page for porting to [iPhone].
