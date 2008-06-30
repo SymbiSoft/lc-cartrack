@@ -1,4 +1,4 @@
-#PageName  Index
+#pagename  Index
 #summary Project description
 
 = Introduction =
