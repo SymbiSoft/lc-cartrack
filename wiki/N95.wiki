@@ -1,0 +1,20 @@
+#summary Porting to Nokia N95
+#labels iphone
+
+= Introduction =
+
+Nokia N95 phone is equipped with built in GPS module. This allows using it as a tracking device without need for additional external bluetooth GPS receiver.
+
+
+= Details =
+
+To make LCCarTrack able to access internal GPS module, an additional python module is required, named LocationRequestor:
+[https://www.iyouit.eu/portal/software.aspx Download module]
+
+[http://discussion.forum.nokia.com/forum/showthread.php?t=108657 Discussion forum on Nokia forum]
+[http://gagravarr.livejournal.com/126871.html Sample applications for Location Requestor]
+[http://gagravarr.org/code/ Other examples]
+
+= Help needed =
+As I do not own an iPhone, help is needed to develop iPhone porting.
+Feel free to modify your source at your wish for this purpose.
