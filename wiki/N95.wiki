@@ -9,10 +9,13 @@ Nokia N95 phone is equipped with built in GPS module. This allows using it as a 
 = Details =
 
 To make LCCarTrack able to access internal GPS module, an additional python module is required, named LocationRequestor:
+
 [https://www.iyouit.eu/portal/software.aspx Download module]
 
 [http://discussion.forum.nokia.com/forum/showthread.php?t=108657 Discussion forum on Nokia forum]
+
 [http://gagravarr.livejournal.com/126871.html Sample applications for Location Requestor]
+
 [http://gagravarr.org/code/ Other examples]
 
 = Help needed =
