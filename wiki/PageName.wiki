@@ -12,15 +12,19 @@ This causes costs to be greater than adopting a GPRS communication method, but i
 
 = Possible improvements =
 As pys60 does allow simulating keystrokes sent to other applications, maybe it could be possibile to start a GPRS connection by simulating the user pressing the YES key; but this should also require to be able to detect if such a connection is already active, to be able to know if the confirmation dialog is being shown.
+
 A further improvement could be "parking mode": if you have to park your car for a long time, you set up the program to continuously check for the parking location GPS position: as soon as the car position changes w.r.t. stored position, a theft is detected and an SMS is sent (or tracking mode is activated)
+
 A strongly needed improvement is an additional program to be used on *another* phone which allows tracking stolen phone position without the need for a portable computer. To accomplish this, a map visualization algorithm must be implemented.
 
 = Porting to other platforms =
 
 Although this program is designed to work with external GPS sets, it should be possible to make it work on cellphones equipped with built-in GPS module such as Nokia [N95] or Apple [iPhone].
 
-To port program to N95 an additional python module is required, named LocationRequesto:
+To port program to N95 an additional python module is required, named LocationRequestor:
+
 https://www.iyouit.eu/portal/software.aspx
 
 To port program to iPhone you'll need to "hack" it in such a way it can be programmed in Python:
+
 http://www.saurik.com/id/5
