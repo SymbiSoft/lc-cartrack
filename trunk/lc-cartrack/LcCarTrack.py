@@ -2,7 +2,10 @@
 ### LcCarTrack - satellite car antitheft 
 ###     Written by Luca Cassioli 2008
 ##########################################
-## Version 1.0.0
+## Version 1.1.0
+
+# 1.1.0 - Started SVN/GoogleCode configuration management
+#         Customizable message formatting added. 
 
 ### This program is FREEWARE.
 ### Commercial use is forbidden without author's permission.
@@ -31,9 +34,56 @@ Recipient_number="000000"
 FOLDER='e:/LcCarTrack'
 FILEPATH='e:/LcCarTrack/settings.txt'
 
+# Available message formats:
+FMT_YOUPOSITION = 1 # Lat$Lon  , for site http://www.youposition.it 
+FMT_DECIMAL = 2 # LAT=dd.dddddd, LON=dd.dddddd
+FMT_60 = 3 # LAT = dd mm ss.ssss , LON = dd mm ss.ssss
+FMT_CUSTOM1 = 4 # Free slot: add your conversion algorithm in FomratMessage(lat,lon,type) function
+FMT_CUSTOM2 = 5 # Free slot: add your conversion algorithm in FomratMessage(lat,lon,type) function
+
+##################################
+####  Selected message format ####
+MSG_FORMAT = FMT_YOUPOSITION  ####
+##################################
+  
+  
 TRACKING = 0 # Disabled by default.
 INTERVAL = 20 # seconds between tracking messages
 
+
+def FormatMessage(lat,lon,fmt):
+  print "converto lat:",lat, " , lon:", lon, " in formato ", fmt
+  LatComma=lat.find(".")
+  LonComma = lon.find(".")
+  la = float(lat)
+  lo = float(lon)
+  print lat ,la
+  print lon, lo
+  msg = "[conversion error]"
+  if fmt == FMT_YOUPOSITION: # dd.dddddd$ddd.dddddd
+    msg = lat +"$" + lon 
+    print "Prestringa FMT_YOUPOSITION:",msg    
+  if fmt == FMT_DECIMAL: # LAT:dd.dddddd,LON:ddd.dddddd
+    msg = "LAT:" + lat + ", LON:" + lon
+    print "Prestringa FMT_DECIMAL:",msg    
+  if fmt == FMT_60:
+    la_deg = la
+    la_min = (la-int(la))*60
+    la_sec = (la_min-int(la_min))*60
+    print int(la_deg), int(la_min), int(la_sec)
+    lo_deg = lo
+    lo_min = (lo-int(lo))*60
+    lo_sec = (lo_min-int(lo_min))*60
+    print int(lo_deg), int(lo_min), int(lo_sec)
+    msg = "LAT:" + str(int(la_deg))+ " " + str(int(la_min)) + " " + str((la_sec)) + \
+          ", LON:" + str(int(lo_deg))+ " " + str(int(lo_min)) + " " + str((lo_sec))
+  if fmt == FMT_CUSTOM1:
+    pass
+  if fmt == FMT_CUSTOM2:
+    pass
+  return msg
+  
+  
 def Connect():
   #return "debug"
   sock=socket.socket(socket.AF_BT,socket.SOCK_STREAM)
@@ -43,6 +93,7 @@ def Connect():
   return sock
   
 def ReadPos():
+      global MSG_FORMAT
       valid = 0 
       while (valid==0): # If unknown line is read from GPS, device output must be read again.
           rawdata = readline(sock) 
@@ -56,19 +107,23 @@ def ReadPos():
               location = {}
               if sentence_id == 'GGA':
                 location = get_gga_location(sentence_data) 
-                msg = 'LAT:' + location['lat'] + ',LON:' + location['long']
                 valid = 1
               if sentence_id == 'GLL':
                 location = get_gll_location(sentence_data)
-                msg = 'LAT:' + location['lat'] + ',LON:' + location['long']
                 valid = 1
               if sentence_id == 'RMC':
                 location = get_rmc_location(sentence_data)
-                msg = 'LAT:' + location['lat'] + ',LON:' + location['long']
-                valid = 1                     
+                valid = 1     
+              if valid == 1:                
+                temp = 'LAT:' + location['lat'] + ',LON:' + location['long']
+                la = str(int(temp[4:6])+float(temp[6:13])/60)
+                lo = str(int(temp[19:22])+float(temp[22:29])/60)
+                msg = FormatMessage(la,lo,MSG_FORMAT) 
+              else:
+                msg = "Invalid data, can't format"
           else:
-              print "****** dati non validi*****"
-              msg= 'couldnt receive GPS data'        
+              print "****** invalid data *****"
+              msg= 'ERROR:couldnt receive GPS data'        
       return msg
       
       
@@ -206,8 +261,21 @@ def readline(sock):
 ReadSettings()
 sock=Connect()
 
-print Recipient_number
-print sock
+
+############# Usage example:
+MSG_FORMAT = FMT_YOUPOSITION
+print ReadPos() # DEBUG
+
+e32.ao_sleep(3)
+MSG_FORMAT = FMT_DECIMAL
+print ReadPos() # DEBUG
+
+e32.ao_sleep(3)
+MSG_FORMAT = FMT_60
+print ReadPos() # DEBUG
+
+############################
+
 
 print 'connecting to inbox...'
 i=inbox.Inbox()  #DEBUG
