@@ -2,10 +2,13 @@
 ### LcCarTrack - satellite car antitheft 
 ###     Written by Luca Cassioli 2008
 ##########################################
-## Version 1.1.0
+## Version 1.1.2
 
+
+# 1.1.2 - Added degree/minutes/seconds separators
 # 1.1.1 - Fixed bug of sample FormatMessage() calls
-#       - overriding MSG_FORMAT settings.
+#         overriding MSG_FORMAT settings.
+#       - Added customizable decimals number.  
 # 1.1.0 - Started SVN/GoogleCode configuration management
 #         Customizable message formatting added. 
 
@@ -76,11 +79,11 @@ def FormatMessage(lat,lon,fmt):
     lo_min = (lo-int(lo))*60
     lo_sec = (lo_min-int(lo_min))*60
     
-    StrLat = str(int(la_deg))+ " " + str(int(la_min)) + " " + str((la_sec))
-    StrLat = StrLat[0:StrLat.find(".")+MAX_DECIMALS+1]
+    StrLat = str(int(la_deg))+ "^ " + str(int(la_min)) + "' " + str((la_sec))
+    StrLat = StrLat[0:StrLat.find(".")+MAX_DECIMALS+1] + "''"
     
-    StrLon = str(int(lo_deg))+ " " + str(int(lo_min)) + " " + str((lo_sec))
-    StrLon = StrLon[0:StrLon.find(".")+MAX_DECIMALS+1]
+    StrLon = str(int(lo_deg))+ "^ " + str(int(lo_min)) + "' " + str((lo_sec))
+    StrLon = StrLon[0:StrLon.find(".")+MAX_DECIMALS+1] + "''"
     
     msg = "LAT:" + StrLat + ", LON:" + StrLon
   if fmt == FMT_CUSTOM1:
