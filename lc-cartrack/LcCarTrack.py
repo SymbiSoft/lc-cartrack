@@ -4,6 +4,8 @@
 ##########################################
 ## Version 1.1.0
 
+# 1.1.1 - Fixed bug of sample FormatMessage() calls
+#       - overriding MSG_FORMAT settings.
 # 1.1.0 - Started SVN/GoogleCode configuration management
 #         Customizable message formatting added. 
 
@@ -43,7 +45,8 @@ FMT_CUSTOM2 = 5 # Free slot: add your conversion algorithm in FomratMessage(lat,
 
 ##################################
 ####  Selected message format ####
-MSG_FORMAT = FMT_YOUPOSITION  ####
+MSG_FORMAT = FMT_DECIMAL      ####
+MAX_DECIMALS = 6              ####
 ##################################
   
   
@@ -52,31 +55,34 @@ INTERVAL = 20 # seconds between tracking messages
 
 
 def FormatMessage(lat,lon,fmt):
-  print "converto lat:",lat, " , lon:", lon, " in formato ", fmt
+  #print "converto lat:",lat, " , lon:", lon, " in formato ", fmt
   LatComma=lat.find(".")
   LonComma = lon.find(".")
   la = float(lat)
   lo = float(lon)
-  print lat ,la
-  print lon, lo
+  #print lat ,la
+  #print lon, lo
   msg = "[conversion error]"
   if fmt == FMT_YOUPOSITION: # dd.dddddd$ddd.dddddd
-    msg = lat +"$" + lon 
-    print "Prestringa FMT_YOUPOSITION:",msg    
-  if fmt == FMT_DECIMAL: # LAT:dd.dddddd,LON:ddd.dddddd
-    msg = "LAT:" + lat + ", LON:" + lon
-    print "Prestringa FMT_DECIMAL:",msg    
+    msg = lat[0:lat.find(".")+MAX_DECIMALS+1] +"$" + lon[0:lon.find(".")+MAX_DECIMALS+1]         
+  if fmt == FMT_DECIMAL: # LAT:dd.dddddd,LON:ddd.dddddd (with MAX_DECIMALS decimals)
+    msg = "LAT:" + lat[0:lat.find(".")+MAX_DECIMALS+1] + ", LON:" + lon[0:lon.find(".")+MAX_DECIMALS+1]    
   if fmt == FMT_60:
     la_deg = la
     la_min = (la-int(la))*60
     la_sec = (la_min-int(la_min))*60
-    print int(la_deg), int(la_min), int(la_sec)
+    
     lo_deg = lo
     lo_min = (lo-int(lo))*60
     lo_sec = (lo_min-int(lo_min))*60
-    print int(lo_deg), int(lo_min), int(lo_sec)
-    msg = "LAT:" + str(int(la_deg))+ " " + str(int(la_min)) + " " + str((la_sec)) + \
-          ", LON:" + str(int(lo_deg))+ " " + str(int(lo_min)) + " " + str((lo_sec))
+    
+    StrLat = str(int(la_deg))+ " " + str(int(la_min)) + " " + str((la_sec))
+    StrLat = StrLat[0:StrLat.find(".")+MAX_DECIMALS+1]
+    
+    StrLon = str(int(lo_deg))+ " " + str(int(lo_min)) + " " + str((lo_sec))
+    StrLon = StrLon[0:StrLon.find(".")+MAX_DECIMALS+1]
+    
+    msg = "LAT:" + StrLat + ", LON:" + StrLon
   if fmt == FMT_CUSTOM1:
     pass
   if fmt == FMT_CUSTOM2:
@@ -261,8 +267,12 @@ def readline(sock):
 ReadSettings()
 sock=Connect()
 
+StoreSettings = MSG_FORMAT
 
 ############# Usage example:
+### WARNING: These example will overrird setting for MSG_FORMAT variable at
+### the beginning of the source!!!
+#
 MSG_FORMAT = FMT_YOUPOSITION
 print ReadPos() # DEBUG
 
@@ -273,9 +283,9 @@ print ReadPos() # DEBUG
 e32.ao_sleep(3)
 MSG_FORMAT = FMT_60
 print ReadPos() # DEBUG
-
 ############################
 
+MSG_FORMAT = StoreSettings
 
 print 'connecting to inbox...'
 i=inbox.Inbox()  #DEBUG
