@@ -2,11 +2,13 @@
 
 = Introduction =
 By mean of SMSs received by a phone running LC-CarTrack, you can track that phone over a map. Currently there is no program available which can display on a map the received point, but it should be possible to write an additional program which, upon receiving the SMS, creates a POI file which is then loaded by a GPS mapping program
-Such a program could perhaps be J2meMap or MGMaps.
+Such a program could perhaps be [http://j2memap.landspurg.net/ J2meMap] or [http://www.mgmaps.com/ MGMaps] or [http://code.google.com/p/tracker-py/ Tracker.py].
+
 
 
 = [http://j2memap.landspurg.net/ J2meMap] =
 Not yet tested
+
 
 
 
@@ -16,6 +18,8 @@ On version 1.41.03, you'll use:
 menu - 3.services - 6.viewKML -> Open File
 Process must be manually repeated any time you want the position to be updated, but it should be possible to programmatically simulate needed keys (once the KML path has been set):
 left-soft-key, 3, 6, OK, DOWN, OK, left-soft-key, OK, DOWN, OK, LEFT, LEFT
+
+
 
 
 = [http://code.google.com/p/tracker-py/ Tracker.py] =
