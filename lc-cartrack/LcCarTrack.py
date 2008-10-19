@@ -2,8 +2,10 @@
 ### LcCarTrack - satellite car antitheft 
 ###     Written by Luca Cassioli 2008
 ##########################################
-## Version 1.1.3
+## Version 1.1.4
 
+# 1.1.4 - *GGA and *GLL strings no more used (contain old data?)
+#         Implemented GSM_position
 # 1.1.3 - Added dozens of try-catch to increase robustness...
 # 1.1.2 - Added degree/minutes/seconds separators
 # 1.1.1 - Fixed bug of sample FormatMessage() calls
@@ -37,6 +39,19 @@ import appuifw
 import messaging
 import os
 from e32 import ao_sleep,Ao_lock
+import phone_ext
+
+import keypress
+from key_codes import *
+
+import appswitch
+import urllib
+
+import location
+
+locationAPI=location
+abort = 0
+
 
 Recipient_number="000000"
 FOLDER='e:/LcCarTrack'
@@ -59,12 +74,39 @@ MAX_DECIMALS = 6              ####
 TRACKING = 0 # Disabled by default.
 INTERVAL = 20 # seconds between tracking messages
 MAXATTEMPTS = 1 # Max attempts in case of GPS error
+MAXSTRINGATTEMPTS = 40 # Max attempts in case of not suitable string incoming from GPS
 GPS_CONNECT_ERROR = "Error connecting to GPS"
 GPS_RECONNECT_ERROR = "Failed attempting reconnecting to GPS"
 
 GPS_address = '' # temporary
 GlobalErr = 0
 
+
+def UploadPosition():
+  p = ReadPos()
+  data = "<?xml version=%221.0%22 encoding=%22UTF-8%22?><kml xmlns=%22http://www.opengis.net/kml/2.2%22><Placemark><name>Prova</name><description>Descrizione</description><Point><coordinates>" + p  + ",0</coordinates></Point></Placemark></kml>"
+  data=urllib.urlencode({'data':data})
+  print "Starting authorizer in background..."
+  e32.start_server("c:\\system\\apps\\python\\my\\authorize.py")
+  print "Uploading data ..."
+  try:
+    response = urllib.urlopen("http://jumpjack.altervista.org/prove/testphp.php?data=" + data).read()
+    print "Result: "+ response
+  except Exception,e:
+    print "Error uploading data! " + str(e)
+
+
+def PrintOptions():
+  print
+  print "###########################"
+  print "1 - Show position"
+  print "2 - Send position"
+  print "3 - Search new GPS device"  
+  print "4 - Upload position"  
+  print "5 - Break loop"  
+  print
+  print "0 - SHOW THIS MENU"
+  print "###########################"
 
 def quit():
     app.exit_key_handler = None
@@ -74,20 +116,33 @@ def quit():
     print
     
 def cb_capture(key):
-    if key==keycapture.EKeySelect:
-      print "select"
+    global abort
+    if key==keycapture.EKey0:
+      PrintOptions();
     if key==keycapture.EKey1:
       print "Current position:", ReadPos()
     if key==keycapture.EKey2:
       print "Sending message..."
       SendMess(Recipient_number, ReadPos())
+    if key==keycapture.EKey3:
+      try:
+        sock=socket.socket(socket.AF_BT,socket.SOCK_STREAM)
+        address,service=socket.bt_discover()   
+        print "Address:", address
+      except Exception, e:
+        print "Error formatting message: " + str(e)
+    if key==keycapture.EKey4:
+      print "Uploading position..."
+      UploadPosition()
+    if key==keycapture.EKey5:
+      print "STOP!"
+      abort = 1
 
         
         
 def FormatMessage(lat,lon,fmt):
   global GlobalErr
   #print "converto lat:",lat, " , lon:", lon, " in formato ", fmt
-  GlobalErr = ""
   try:
     GlobalErr = 0
     LatComma=lat.find(".")
@@ -149,27 +204,27 @@ def Connect():
   
 def ReadPos():
       global sock,MSG_FORMAT, MAXATTEMPTS,GPS_CONNECT_ERROR,GPS_RECONNECT_ERROR,GlobalErr
-      print "DEBUGInizio readpos: controllo SOCK..."
+      print "   DEBUG - controllo SOCK..."
       if (sock==GPS_CONNECT_ERROR) or (GlobalErr<>0):
-        print "DEBUG-errore, riconnetto..."
+        print "   DEBUG - errore, riconnetto..."
         attempts = 0
         while (GlobalErr<>0) and (attempts<=MAXATTEMPTS):
           sock=Connect()
           attempts = attempts + 1
         if sock==GPS_CONNECT_ERROR:
-          print "DEBUG impossibile riconnettersi"
+          print "   DEBUG -  impossibile riconnettersi"
           return GPS_RECONNECT_ERROR
-      print "DEBUGtutto ok, procedo..."
+      print "   DEBUG - tutto ok, procedo..."
       msg="[empty]"
       GlobalErr = 0
       try:
         valid = 0 
         attempts = 0
         GlobalErr = 0
-        while (valid==0) and (attempts<=MAXATTEMPTS): # If unknown line is read from GPS, device output must be read again.
-            print "DEBUGinizio ciclo"
+        while (valid==0) and (attempts<=MAXSTRINGATTEMPTS): # If unknown line is read from GPS, device output must be read again.
+            #print "   DEBUG - inizio ciclo lettura"
             attempts = attempts + 1
-            rawdata="[TBR]"
+            rawdata="[ToBeRead]"
             rawdata = readline(sock) 
             print "raw=",rawdata
             if rawdata:
@@ -182,10 +237,10 @@ def ReadPos():
                 location = {}
                 if sentence_id == 'GGA':
                   location = get_gga_location(sentence_data) 
-                  valid = 1
+                  valid = 0 # No useful data?
                 if sentence_id == 'GLL':
                   location = get_gll_location(sentence_data)
-                  valid = 1
+                  valid = 0 # No useful data?
                 if sentence_id == 'RMC':
                   location = get_rmc_location(sentence_data)
                   valid = 1     
@@ -198,14 +253,18 @@ def ReadPos():
                   msg = "Invalid data, can't format"
             else:
                 print "****** invalid data *****"
-                msg= 'ERROR:couldnt receive GPS data'   
+                msg= 'ERROR: couldnt receive GPS data'   
       except Exception,e:
         GlobalErr = e
         print "Error in readpos(): " + str(e)
-      #finally: 
+        
+      #mcc, mnc, lac, cellid = locationAPI.gsm_location()         
       if valid==0:
-        msg="GPS error: "+ str(GlobalErr)    
-      print "Risultato ReadPos:" + msg        
+        msg=msg+ str(GlobalErr)
+      if GlobalErr == "":
+        GlobalErr = "Couldn't receive data from GPS"    
+      # Add GSM position (You can use www.opencellid.org to determine position:  http://www.opencellid.org/cell/get?mnc=1&mcc=2&lac=200&cellid=234 "
+      #msg = msg + " - GSM: mcc=" +  str(mcc) + ", mnc=" +  str(mnc) + ", lac=" + str(lac) + ", cellid=" +  str(cellid)    
       return msg
       
       
@@ -221,7 +280,7 @@ def SendMess(n,m):
 
 def read_sms(id): #DEBUG
 #def read_sms():
-    global GlobalErr,Recipient_number
+    global GlobalErr,Recipient_number,sock
     global TRACKING
     ##############################à
     #sms_text="TRACK ON" # DEBUG*********
@@ -229,31 +288,45 @@ def read_sms(id): #DEBUG
     try:
       GlobalErr = 0
       e32.ao_sleep(0.1)
-      i=inbox.Inbox() #DEBUG
-      sms_text=i.content(id) #DEBUG
-      appuifw.note(u"Messaggio da elaborare: " + sms_text, "info")
-  
+      try:
+        i=inbox.Inbox() #DEBUG
+      except:
+        print "ERROR connecting to inbox"
+      try:
+        sms_text=i.content(id) #DEBUG
+        print "SMS ricevuto: ", sms_text
+      except:
+        print "Error retrieving message body"
       # Execute different actions depending on SMS contents:
-      if sms_text[0:8] == 'TRACK ON':
+      if sms_text[0:8].upper() == 'TRACK ON':
         i.delete(id) # Delete just received message
+        print "riconosciuto TRACK ON"
         SendMess(Recipient_number,'TRACKING ACTIVATED!')
         TRACKING = 1
         while (TRACKING == 1):
           e32.ao_sleep(INTERVAL)
-          msg=ReadPos()
-          SendMess(Recipient_number,'TRACKING: '+msg)  
-          print 'Tracker message sent.'
-      if sms_text[0:9] == 'TRACK OFF':
+          UploadPosition()
+          #msg=ReadPos()
+          #SendMess(Recipient_number,'TRACKING: '+msg)  
+          print 'Tracker message uploaded.'
+      if sms_text[0:9].upper() == 'TRACK OFF':
+        print "riconosciuto TRACK OFF"
         i.delete(id) # Delete just received message
         TRACKING = 0
         SendMess(Recipient_number, "tracking DEactivated!")
-      if sms_text[0:4] == 'SEND':
+      if sms_text[0:4].upper() == 'SEND':
+        print "riconosciuto SEND"
         i.delete(id) # Delete just received message
-        print 'Reading position....'      
-        msg=ReadPos()
-        print 'Sending position ' + msg + ' to ' + Recipient_number 
-        SendMess(Recipient_number, msg) # Send SMS.
-        print 'Position sent.'
+        #print 'Reading position....'      
+        #msg=ReadPos()
+        #print 'Sending position ' + msg + ' to ' + Recipient_number 
+        UploadPosition()
+        #SendMess(Recipient_number, msg) # Send SMS.
+        print 'Position uploaded.'
+      if sms_text[0:6].upper() == 'STATUS':
+        print "riconosciuto STATUS"      
+        i.delete(id) # Delete just received message
+        SendMess(Recipient_number, "Status: GlobalErr="+repr(GlobalErr)+", msg=" + msg) # Send SMS.
     except Exception, e:
       GlobalErr = e
       print "Error processing message >>" + sms_text + "<< :"+ str(e) 
@@ -420,10 +493,19 @@ script_lock = Ao_lock()
 app.exit_key_handler = quit
 capturer=keycapture.KeyCapturer(cb_capture)
 capturer.forwarding=0
-capturer.keys=(keycapture.EKeySelect,keycapture.EKey1,keycapture.EKey2)
+capturer.keys=(keycapture.EKey0,keycapture.EKey1,keycapture.EKey2,keycapture.EKey3,keycapture.EKey4)
+PrintOptions()
 capturer.start()
+
+# while abort==0: #endless loop to monitor for incoming calls
+#   if phone_ext.CallStatus() == 5:
+#     phone_ext.HangUp()
+#     e32.ao_sleep(5)  
+#     phone_no = str(phone_ext.LastCall())
+#     UploadPosition()  
+#     print "Position uploaded."
+    
 script_lock.wait()
 
-#print "DEBUG MODE"
-#read_sms()
+
 
