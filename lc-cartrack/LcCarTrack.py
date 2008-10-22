@@ -4,8 +4,9 @@
 ##########################################
 ## Version 1.1.4
 
-# 1.1.4 - *GGA and *GLL strings no more used (contain old data?)
-#         Implemented GSM_position
+# 1.1.4 - *GGA and *GLL strings no more used (contain old data?).
+#         Implemented GSM_position.
+#         Implemented GPRS suploading by server-driven self authorization.
 # 1.1.3 - Added dozens of try-catch to increase robustness...
 # 1.1.2 - Added degree/minutes/seconds separators
 # 1.1.1 - Fixed bug of sample FormatMessage() calls
@@ -56,18 +57,21 @@ abort = 0
 Recipient_number="000000"
 FOLDER='e:/LcCarTrack'
 FILEPATH='e:/LcCarTrack/settings.txt'
+SERVER='jumpjack.altervista.org'
+FOLDER='lccartrack'
+FILENAME='upload.php'
 
 # Available message formats:
 FMT_YOUPOSITION = 1 # Lat$Lon  , for site http://www.youposition.it 
 FMT_DECIMAL = 2 # LAT=dd.dddddd, LON=dd.dddddd
 FMT_60 = 3 # LAT = dd mm ss.ssss , LON = dd mm ss.ssss
-FMT_CUSTOM1 = 4 # Free slot: add your conversion algorithm in FomratMessage(lat,lon,type) function
+FMT_GOOGLE = 4 # GoogleEarth
 FMT_CUSTOM2 = 5 # Free slot: add your conversion algorithm in FomratMessage(lat,lon,type) function
 
 ##################################
 ####  Selected message format ####
-MSG_FORMAT = FMT_DECIMAL      ####
-MAX_DECIMALS = 6              ####
+MSG_FORMAT = FMT_GOOGLE       ####
+MAX_DECIMALS = 10             ####
 ##################################
   
   
@@ -83,14 +87,16 @@ GlobalErr = 0
 
 
 def UploadPosition():
+  global SERVER, FOLDER, FILENAME
   p = ReadPos()
-  data = "<?xml version=%221.0%22 encoding=%22UTF-8%22?><kml xmlns=%22http://www.opengis.net/kml/2.2%22><Placemark><name>Prova</name><description>Descrizione</description><Point><coordinates>" + p  + ",0</coordinates></Point></Placemark></kml>"
-  data=urllib.urlencode({'data':data})
+  data = p  
+  data=urllib.urlencode({'pos':data,'name':'Tracking','speed':'na'})
+  print "Invio:",data
   print "Starting authorizer in background..."
   e32.start_server("c:\\system\\apps\\python\\my\\authorize.py")
   print "Uploading data ..."
   try:
-    response = urllib.urlopen("http://jumpjack.altervista.org/prove/testphp.php?data=" + data).read()
+    response = urllib.urlopen("http://"+SERVER+"/"+FOLDER+"/"+FILENAME+"?" + data).read()
     print "Result: "+ response
   except Exception,e:
     print "Error uploading data! " + str(e)
@@ -172,8 +178,8 @@ def FormatMessage(lat,lon,fmt):
       StrLon = StrLon[0:StrLon.find(".")+MAX_DECIMALS+1] + "''"
       
       msg = "LAT:" + StrLat + ", LON:" + StrLon
-    if fmt == FMT_CUSTOM1:
-      pass
+    if fmt == FMT_GOOGLE: # LON,LAT - dd.dddddd$ddd.dddddd
+      msg = lon[0:lon.find(".")+MAX_DECIMALS+1] +"," + lat[0:lon.find(".")+MAX_DECIMALS+1]         
     if fmt == FMT_CUSTOM2:
       pass
   except Exception, e:
