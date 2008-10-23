@@ -6,7 +6,7 @@ Such a program could perhaps be [http://j2memap.landspurg.net/ J2meMap] or [http
 
 = GoogleEarth =
 Realtime tracking in GoogleEarth is already working.
-You must edit the source to [specify the webserver] where to [upload data] to, then you must [configure GoogleEarth] to receive data from the program.
+You must edit the source to [specify the webserver] where to [upload] data to, then you must [configure] GoogleEarth to receive data from the program.
 
 
 = [http://j2memap.landspurg.net/ J2meMap] =
